@@ -1,0 +1,1 @@
+Sketch for ESP32 Dev Module with a 1x4 8x8 LED dot matrix display. Creates a captive WiFi portal and hosts a web page to allow messages to be added/deleted. Has a few secret settings to add a bit of functionallity.

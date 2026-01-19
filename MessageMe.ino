@@ -1,4 +1,5 @@
 #include <WiFi.h>
+#include <esp_wifi.h>
 #include <WebServer.h>
 #include <DNSServer.h>
 #include <SPIFFS.h>
@@ -24,7 +25,6 @@ bool darkMode = false; // inverted display flag
 // ---------------------------
 // WIFI + CAPTIVE PORTAL CONFIG
 // ---------------------------
-const char* ssid = "MessageMeWiFi";
 const char* password = NULL;
 
 // ---------------------------
@@ -598,9 +598,18 @@ void setup() {
   loadSettings();
   loadMessages();
 
+  uint8_t mac[6];
+  esp_read_mac(mac, ESP_MAC_WIFI_STA);
+
+  static char ssid[32];
+  snprintf(ssid, sizeof(ssid), "MessageMe-%02X%02X%02X",mac[3],mac[4],mac[5]);
+    
   WiFi.softAP(ssid, password);
   IPAddress apIP = WiFi.softAPIP();
 
+  Serial.print("AP SSID: ");
+  Serial.println(ssid);  
+    
   dnsServer.start(DNS_PORT, "*", apIP);
 
   server.on("/", handleRoot);

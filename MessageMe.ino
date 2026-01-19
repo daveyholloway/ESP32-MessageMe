@@ -1,49 +1,60 @@
+// *****************************************************************************
+// MessageMe
+// =========
+// Displays messages on an 8 * 32 LED dot matrix display, hosts a WiFi access
+// point and captive portal to allow the user to add messages and change a 
+// few settings too.
+// 
+// Modification History
+// ====================
+// When        Who             Why
+// ----------- --------------- -------------------------------------------------
+// 19/01/2026  Dave Hol'       Initial Version
+// *****************************************************************************
+
+// Wifi Related
 #include <WiFi.h>
 #include <esp_wifi.h>
+
+// Web Server Related
 #include <WebServer.h>
 #include <DNSServer.h>
+
+// Storage Related
 #include <SPIFFS.h>
+
+// JSON module
 #include <ArduinoJson.h>
 
+// Display Hardware Related
+#include <SPI.h>
 #include <MD_Parola.h>
 #include <MD_MAX72xx.h>
-#include <SPI.h>
 
-// ---------------------------
-// LED MATRIX CONFIG
-// ---------------------------
+// LED Matrix Config
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_DEVICES 4
 #define CS_PIN 5
-
 MD_Parola display = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
 
+// A few default display settings
 uint16_t scrollSpeed = 100;   // default
 uint8_t displayBrightness = 5; // default brightness (0–15)
 bool darkMode = false; // inverted display flag
 
-// ---------------------------
-// WIFI + CAPTIVE PORTAL CONFIG
-// ---------------------------
+// WIFI + Captive Portal Config
 const char* password = NULL;
+DNSServer dnsServer;
+const byte DNS_PORT = 53;
+WebServer server(80);
 
-// ---------------------------
-// Message structure
-// ---------------------------
+// Message Storage
 struct Message {
   String text;                 // The message itself
   unsigned long long timestamp; // Browser-provided timestamp (ms since epoch)
   String mac;                  // MAC address of device submitting
 };
 
-DNSServer dnsServer;
-const byte DNS_PORT = 53;
-
-WebServer server(80);
-
-// ---------------------------
-// MESSAGE STORAGE
-// ---------------------------
 const int MAX_MESSAGES = 10;
 String messages[MAX_MESSAGES];
 int messageCount = 0;
@@ -55,9 +66,7 @@ bool displayBusy = false;
 const char* fallbackMessage =
   "Can you figure out how to add your message here?";
 
-// ---------------------------
-// BUILD HTML PAGE
-// ---------------------------
+// Build the HTML page
 String buildPage() {
   String html = R"rawliteral(
   <!DOCTYPE html>

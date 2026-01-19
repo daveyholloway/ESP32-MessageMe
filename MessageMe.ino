@@ -357,9 +357,9 @@ String buildPage() {
   return html;
 }
 
-// ---------------------------
+// *****************************************************************************
 // CAPTIVE PORTAL REDIRECT
-// ---------------------------
+// *****************************************************************************
 bool captivePortal() {
   if (!server.hostHeader().equals(WiFi.softAPIP().toString())) {
     server.sendHeader("Location", String("http://") + WiFi.softAPIP().toString(), true);
@@ -402,9 +402,9 @@ void saveMessages() {
   file.close();
 }
 
-// ---------------------------
-// Advanced Settings
-// ---------------------------
+// *****************************************************************************
+// Advanced/Secret Settings - Load
+// *****************************************************************************
 void loadSettings() {
   if (!SPIFFS.exists("/settings.json")) return;
 
@@ -431,9 +431,9 @@ void saveSettings() {
   f.close();
 }
 
-// ---------------------------
-// WEB HANDLERS
-// ---------------------------
+// *****************************************************************************
+// Advanced/Secret Settings - Save
+// *****************************************************************************
 void handleSubmit() {
   if (server.method() != HTTP_POST) {
     server.send(405, "text/plain", "Method Not Allowed");
@@ -563,17 +563,16 @@ void handleNotFound() {
   server.send(404, "text/plain", "Not found");
 }
 
-
-
-
-// ---------------------------
-// DISPLAY LOGIC
-// ---------------------------
+// *****************************************************************************
+// DISPLAY LOGIC - Get the next message to display
+// *****************************************************************************
 String getCurrentMessage() {
   if (messageCount == 0) return fallbackMessage;
   return messages[currentMessageIndex];
 }
-
+// *****************************************************************************
+// DISPLAY LOGIC - Scroll the current message
+// *****************************************************************************
 void startScrollingMessage() {
   static char scrollBuffer[200];   // safe, fixed memory
 
@@ -589,59 +588,62 @@ void startScrollingMessage() {
     PA_SCROLL_LEFT
   );
 }
-
+// *****************************************************************************
+// DISPLAY LOGIC - Determine which message is next
+// *****************************************************************************
 void advanceMessageIndex() {
   if (messageCount == 0) return;
   currentMessageIndex++;
   if (currentMessageIndex >= messageCount) currentMessageIndex = 0;
 }
 
-// ---------------------------
-// SETUP
-// ---------------------------
+// *****************************************************************************
+// Setup Routine
+// *****************************************************************************
 void setup() {
+
+  // Setup Serial for debugging
   Serial.begin(115200);
   delay(300);
 
+  // Load settings and messahes from SPIFFS storage
   SPIFFS.begin(true);
   loadSettings();
   loadMessages();
 
+  // Use the last 3 octets of the MAC address to make the SSID unique, useful if
+  // 2 or more devices are near each other.
   uint8_t mac[6];
   esp_read_mac(mac, ESP_MAC_WIFI_STA);
-
   static char ssid[32];
   snprintf(ssid, sizeof(ssid), "MessageMe-%02X%02X%02X",mac[3],mac[4],mac[5]);
-    
   WiFi.softAP(ssid, password);
   IPAddress apIP = WiFi.softAPIP();
-
   Serial.print("AP SSID: ");
   Serial.println(ssid);  
-    
-  dnsServer.start(DNS_PORT, "*", apIP);
 
+  // Start DNS and Web Server
+  dnsServer.start(DNS_PORT, "*", apIP);
   server.on("/", handleRoot);
   server.on("/submit", handleSubmit);
   server.on("/delete", handleDelete);
   server.on("/setSpeed", handleSetSpeed);
   server.on("/setBrightness", handleSetBrightness); // <-- add route
   server.on("/setDarkMode", handleSetDarkMode);
-  server.onNotFound(handleNotFound);
-  
+  server.onNotFound(handleNotFound);  
   server.begin();
 
+  // Start the display
   display.begin();
   display.setIntensity(displayBrightness);
   display.setInvert(darkMode);
   display.displayClear();
-
   startScrollingMessage();
 }
 
-// ---------------------------
-// LOOP
-// ---------------------------
+// *****************************************************************************
+// Main Loop
+// *****************************************************************************
 void loop() {
   dnsServer.processNextRequest();
   server.handleClient();

@@ -49,11 +49,11 @@ const byte DNS_PORT = 53;
 WebServer server(80);
 
 // Message Storage
-struct Message {
-  String text;                 // The message itself
-  unsigned long long timestamp; // Browser-provided timestamp (ms since epoch)
-  String mac;                  // MAC address of device submitting
-};
+//struct Message {
+//  String text;                 // The message itself
+//  unsigned long long timestamp; // Browser-provided timestamp (ms since epoch)
+//  String mac;                  // MAC address of device submitting
+//};
 
 const int MAX_MESSAGES = 10;
 String messages[MAX_MESSAGES];
@@ -62,11 +62,14 @@ int messageCount = 0;
 int currentMessageIndex = 0;
 bool displayBusy = false;
 
-// Fallback message when no user messages exist
-const char* fallbackMessage =
+// Fallback  when no user s exist
+const char* fallback =
   "Can you figure out how to add your message here?";
 
+// *****************************************************************************
 // Build the HTML page
+// TODO : Get the sliders to load with the stored values if any are present.
+// *****************************************************************************
 String buildPage() {
   String html = R"rawliteral(
   <!DOCTYPE html>
@@ -358,7 +361,7 @@ String buildPage() {
 }
 
 // *****************************************************************************
-// CAPTIVE PORTAL REDIRECT
+// Redirect to the captive portal.
 // *****************************************************************************
 bool captivePortal() {
   if (!server.hostHeader().equals(WiFi.softAPIP().toString())) {
@@ -369,9 +372,9 @@ bool captivePortal() {
   return false;
 }
 
-// ---------------------------
-// LOAD/SAVE MESSAGES
-// ---------------------------
+// *****************************************************************************
+// Load messages from storage.
+// *****************************************************************************
 void loadMessages() {
   if (!SPIFFS.exists("/messages.txt")) return;
 
@@ -388,6 +391,9 @@ void loadMessages() {
   file.close();
 }
 
+// *****************************************************************************
+// Save messages from storage.
+// *****************************************************************************
 void saveMessages() {
   StaticJsonDocument<512> doc;
   doc["count"] = messageCount;
@@ -420,6 +426,9 @@ void loadSettings() {
   f.close();
 }
 
+// *****************************************************************************
+// Advanced/Secret Settings - Save
+// *****************************************************************************
 void saveSettings() {
   StaticJsonDocument<128> doc;
   doc["scrollSpeed"] = scrollSpeed;
@@ -432,7 +441,7 @@ void saveSettings() {
 }
 
 // *****************************************************************************
-// Advanced/Secret Settings - Save
+// Handle the submit/send message button.
 // *****************************************************************************
 void handleSubmit() {
   if (server.method() != HTTP_POST) {
@@ -468,6 +477,9 @@ void handleSubmit() {
   server.send(200, "text/html", buildPage());
 }
 
+// *****************************************************************************
+// Handle the delete button.
+// *****************************************************************************
 void handleDelete() {
   if (server.method() != HTTP_POST) {
     server.send(405, "text/plain", "Method Not Allowed");
@@ -503,6 +515,9 @@ void handleDelete() {
   server.send(200, "text/html", buildPage());
 }
 
+// *****************************************************************************
+// Handle setting the scroll delay.
+// *****************************************************************************
 void handleSetSpeed() {
   if (server.method() != HTTP_POST) {
     server.send(405, "text/plain", "Method Not Allowed");
@@ -523,6 +538,9 @@ void handleSetSpeed() {
   server.send(200, "text/plain", "OK");
 }
 
+// *****************************************************************************
+// Handle setting the display brightness.
+// *****************************************************************************
 void handleSetBrightness() {
   if (server.method() != HTTP_POST) {
     server.send(405, "text/plain", "Method Not Allowed");
@@ -540,6 +558,9 @@ void handleSetBrightness() {
   server.send(200, "text/plain", "OK");
 }
 
+// *****************************************************************************
+// Handle inverting the display (dark mode)!
+// *****************************************************************************
 void handleSetDarkMode() {
   if (server.method() != HTTP_POST) {
     server.send(405, "text/plain", "Method Not Allowed");
@@ -554,6 +575,9 @@ void handleSetDarkMode() {
   server.send(200, "text/plain", "OK");
 }
 
+// *****************************************************************************
+// Handle loading the page.
+// *****************************************************************************
 void handleRoot() {
   server.send(200, "text/html", buildPage());
 }
@@ -606,7 +630,7 @@ void setup() {
   Serial.begin(115200);
   delay(300);
 
-  // Load settings and messahes from SPIFFS storage
+  // Load settings and messages from SPIFFS storage
   SPIFFS.begin(true);
   loadSettings();
   loadMessages();
